@@ -1,0 +1,4 @@
+- thought about why use tokio::spawn vs td::thread::spawn ? 
+    - since health checker is mostly check & sleep, shoudl put it in async task
+    - if cpu heavy task -> then might use thread::spawn
+    - dont wanna stall other async tasks 
