@@ -6,3 +6,9 @@
 - not gonna use try_join (wait for all)
     - chances of stalling 
     - starvation risk
+
+- use of select! 
+        - network fails/stops 
+                                - select! → main handles it
+        - shutdown requested
+
