@@ -12,11 +12,23 @@ async fn main() -> std::io::Result<()> {
 
     // start health-checker
     // health::start();
+    let mut server = tokio::spawn(
+        run()
+    );
 
-    // initalize load-balancer and bind port
-    tokio::try_join!(
-        run(),
-    )?;
+    let server_result = tokio::select!(
+        res = &mut server => {
+            match res {
+                Ok(Ok(())) => Ok(()),
+                Ok(Err(e)) => Err(e),
+                Err(e) => Err(e.into()),
+            }
+        }
+        _ = tokio::signal::ctrl_c() => {
+            println!("----- Shutdown signal received -----");
+            Ok(())
+        }
+    );
     
-    Ok(())
+    server_result
 }
