@@ -12,3 +12,11 @@
                                 - select! → main handles it
         - shutdown requested
 
+- backend pool
+    - health is atomic boolean flag
+        - to avoid intermediate garbage value
+
+- Error reporting
+    - anyhow for high level application error Result<Config, anyhow::Error>
+    - for low networking level
+        - sticking with td::io::Result<()>

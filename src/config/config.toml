@@ -1,0 +1,19 @@
+# ------ Mock Config ------
+# ------ Load balancer configuration ------
+
+listen_address = "127.0.0.1:8080"
+
+[[backends]]
+remote_address = "127.0.0.1:9001"
+
+[[backends]]
+remote_address = "127.0.0.1:9002"
+
+[[backends]]
+remote_address = "127.0.0.1:9003"
+
+[health]
+interval_seconds = 5
+timeout_seconds = 2
+failure_threshold = 3
+success_threshold = 3
