@@ -31,4 +31,11 @@ pub async fn start(
 pub async fn poll_backend_service() -> () {
     // fetch backend pool
     // let backend_pool = Vec
+
+    // iterate through each backend and check its health
+    // for backend in backend_pool {
+    //     // check health of backend
+    //     // if healthy, keep it in the pool
+    //     // if unhealthy, remove it from the pool
+    // }
 }

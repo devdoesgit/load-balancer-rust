@@ -5,14 +5,14 @@ use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct Backend {
-    pub address: SocketAddr;
-    healthy: AtomicBool;    
+    pub address: SocketAddr,
+    healthy: AtomicBool
 }
 
 impl Backend {
     pub fn new(addr: SocketAddr, healthy: bool) -> Self {
         Self {
-            address: addr;
+            address: addr,
             healthy: AtomicBool::new(healthy)
         }
     }
@@ -24,6 +24,6 @@ impl Backend {
 
     // change running status of backend instance
     pub fn set_status(&self, healthy: bool) {
-        self.healthy.swap(healthy, Ordering::Relaxed) != healthy
+        self.healthy.swap(healthy, Ordering::Relaxed) != healthy;
     }
 }

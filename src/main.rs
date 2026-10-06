@@ -1,9 +1,10 @@
 mod network;
 mod health;
 mod config;
+mod backend;
 
 use config::Config;
-
+use backend::backend_pool::BackendPool;
 use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
@@ -22,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // load active backend modules
-    // let backend_pool = BackendPool::new(configs);
+    let backend_pool = BackendPool::new(&configs);
 
     // create cancellation token
     let token = CancellationToken::new();
