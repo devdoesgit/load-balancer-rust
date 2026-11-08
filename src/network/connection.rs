@@ -1,11 +1,18 @@
+use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
+use tokio_util::task::TaskTracker;
 
 use super::listener::handle_connection;
 
-pub async fn run(cancellation_token: CancellationToken) -> anyhow::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:8080").await?; // fatal: fine to return
+pub async fn run(
+    listen_address: SocketAddr,
+    cancellation_token: CancellationToken,
+    tracker: TaskTracker,
+) -> anyhow::Result<()> {
+    let listener = TcpListener::bind(listen_address).await?; // fatal: fine to return
+    println!("Listening on {listen_address}");
 
     loop {
         tokio::select! {
@@ -21,7 +28,8 @@ pub async fn run(cancellation_token: CancellationToken) -> anyhow::Result<()> {
                 };
 
                 println!("Connected to {peer}");
-                tokio::spawn(async move {
+                // tracked so shutdown can drain in-flight connections
+                tracker.spawn(async move {
                     if let Err(e) = handle_connection(stream).await {
                         eprintln!("connection error from {peer}: {e}");
                     }

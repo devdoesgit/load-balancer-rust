@@ -13,7 +13,7 @@ pub struct BackendConfig {
     pub remote_address: SocketAddr,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct HealthConfig {
     pub interval_seconds: u64,
     pub timeout_seconds: u64,

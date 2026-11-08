@@ -22,8 +22,8 @@ impl Backend {
         self.healthy.load(Ordering::Relaxed)
     }
 
-    // change running status of backend instance
-    pub fn set_status(&self, healthy: bool) {
-        self.healthy.swap(healthy, Ordering::Relaxed) != healthy;
+    // change running status of backend instance, returns true if it actually changed
+    pub fn set_status(&self, healthy: bool) -> bool {
+        self.healthy.swap(healthy, Ordering::Relaxed) != healthy
     }
 }
