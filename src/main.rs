@@ -37,29 +37,13 @@ async fn main() -> anyhow::Result<()> {
     let health_pool = Arc::clone(&backend_pool);
     let health_settings = configs.health.clone();
 
-    // start health-checker
-    let health = tokio::spawn(
-        async move{
-            loop {
-                let res = health::health_checker::start(health_token.clone(), Arc::clone(&health_pool), health_settings.clone()).await;
-                match res {
-                    Ok(()) => {
-                        println!("\n!----- Shutting Down Health Checker -----!");
-                        break
-                    },
-                    Err(e) => eprintln!("Health checker exited with error: {:?}", e)
-                }
-                // retry after 10 seconds, but don't block shutdown while waiting
-                tokio::select! {
-                    _ = health_token.cancelled() => {
-                        println!("\n!----- Shutting Down Health Checker -----!");
-                        break
-                    }
-                    _ = tokio::time::sleep(Duration::from_secs(10)) => {}
-                }
-            }
-        }
-    );
+    // start health-checker under its supervisor (restarts it on panic, gives up after a few tries)
+    let mut health = tokio::spawn(health::health_checker::supervise(
+        health_token,
+        health_pool,
+        health_settings,
+    ));
+    let mut health_done = false;
 
     // tracks spawned connection tasks so they can be drained on shutdown
     let tracker = TaskTracker::new();
@@ -68,9 +52,25 @@ async fn main() -> anyhow::Result<()> {
     let mut sigterm = signal(SignalKind::terminate())?;
 
     let server_result = tokio::select! {
-        res = network::connection::run(configs.listen_address, token.clone(), tracker.clone()) => res,
-        signal = tokio::signal::ctrl_c() => {
-            signal?;
+        res = network::connection::run(configs.listen_address, token.clone(), tracker.clone()) => {
+            // report the real cause first, before the shutdown logs bury it
+            if let Err(e) = &res {
+                eprintln!("\nListener failed on {}: {e:#}", configs.listen_address);
+            }
+            res
+        }
+        // backstop: supervisor gave up (or died) -> fail loudly, systemd restarts the process
+        joined = &mut health => {
+            health_done = true;
+            let err = match joined {
+                Ok(Ok(())) => anyhow::anyhow!("health supervisor stopped unexpectedly"),
+                Ok(Err(e)) => e,
+                Err(e) => anyhow::anyhow!("health supervisor panicked: {e}"),
+            };
+            eprintln!("\n{err:#}");
+            Err(err)
+        }
+        _ = tokio::signal::ctrl_c() => {
             println!("\nReceived SIGINT");
             Ok(())
         }
@@ -96,7 +96,11 @@ async fn main() -> anyhow::Result<()> {
         _ = sigterm.recv() => eprintln!("Second SIGTERM, forcing shutdown"),
     }
 
-    health.await?;
+    // skip if the select! already collected it: awaiting a finished JoinHandle again panics
+    if !health_done {
+        health.await??;
+        println!("!----- Shutting Down Health Checker -----!");
+    }
 
     server_result?;
     Ok(())
