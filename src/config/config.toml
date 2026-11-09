@@ -1,7 +1,7 @@
 # ------ Mock Config ------
 # ------ Load balancer configuration ------
 
-listen_address = "127.0.0.1:8080"
+listen_address = "0.0.0.0:8080"
 
 [[backends]]
 remote_address = "127.0.0.1:9001"
